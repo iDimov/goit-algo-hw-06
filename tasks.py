@@ -88,13 +88,50 @@ class MetroNetwork:
                     queue.append((neighbor, path + [neighbor]))
         return None
     
-    def dijkstra_shortest_path(self, start, end):
-        """Пошук найкоротшого шляху методом Дейкстри"""
-        try:
-            path = nx.dijkstra_path(self.G, start, end, weight='weight')
-            return path
-        except nx.NetworkXNoPath:
+    def dijkstra_algorithm(self, start, end):
+        """Власна реалізація алгоритму Дейкстри"""
+        # Ініціалізація відстаней та попередніх вершин
+        distances = {node: float('infinity') for node in self.G.nodes()}
+        distances[start] = 0
+        previous = {node: None for node in self.G.nodes()}
+        
+        # Створюємо множину невідвіданих вершин
+        unvisited = set(self.G.nodes())
+        
+        while unvisited:
+            # Знаходимо вершину з найменшою відстанню серед невідвіданих
+            current = min(unvisited, key=lambda node: distances[node])
+            
+            if current == end:  # Якщо досягли кінцевої вершини
+                break
+                
+            # Видаляємо поточну вершину з невідвіданих
+            unvisited.remove(current)
+            
+            # Перевіряємо всіх сусідів поточної вершини
+            for neighbor in self.G.neighbors(current):
+                if neighbor in unvisited:
+                    # Розраховуємо нову відстань через поточну вершину
+                    weight = self.G[current][neighbor]['weight']
+                    new_distance = distances[current] + weight
+                    
+                    # Якщо знайдено коротший шлях
+                    if new_distance < distances[neighbor]:
+                        distances[neighbor] = new_distance
+                        previous[neighbor] = current
+        
+        # Відновлюємо шлях від кінцевої до початкової вершини
+        if distances[end] == float('infinity'):
             return None
+            
+        path = []
+        current = end
+        while current is not None:
+            path.append(current)
+            current = previous[current]
+        
+        # Повертаємо шлях у правильному порядку
+        return path[::-1]
 
 def main():
     # Створюємо та налаштовуємо мережу
@@ -118,11 +155,18 @@ def main():
     print(f"\nШлях BFS від {start} до {end}:")
     print(" -> ".join(bfs_result) if bfs_result else "Шлях не знайдено")
     
-    # Завдання 3: Найкоротший шлях
-    print("\n=== Завдання 3: Найкоротший шлях (Дейкстра) ===")
-    shortest_path = metro.dijkstra_shortest_path(start, end)
+    # Завдання 3: Найкоротший шлях (власна реалізація алгоритму Дейкстри)
+    print("\n=== Завдання 3: Найкоротший шлях (власна реалізація Дейкстри) ===")
+    shortest_path = metro.dijkstra_algorithm(start, end)
     print(f"\nНайкоротший шлях від {start} до {end}:")
-    print(" -> ".join(shortest_path) if shortest_path else "Шлях не знайдено")
+    if shortest_path:
+        print(" -> ".join(shortest_path))
+        # Розрахуємо загальну вагу шляху
+        total_weight = sum(metro.G[shortest_path[i]][shortest_path[i+1]]['weight'] 
+                          for i in range(len(shortest_path)-1))
+        print(f"Загальна вага шляху: {total_weight}")
+    else:
+        print("Шлях не знайдено")
 
 if __name__ == "__main__":
     main()
